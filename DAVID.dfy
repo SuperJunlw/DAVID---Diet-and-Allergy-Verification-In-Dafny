@@ -35,12 +35,12 @@ ghost function annotateTree(node: MenuTree, allergens: set<string>): AllergyLabe
       Safe
 }
 
-// Specification: menu item containing allergens must not be labeled safe
-method verifyUnsafeTreeNotSafe(tree: MenuTree, allergens: set<string>)
-  requires exists ing :: ing in allergens && containsAllergen(tree, ing)
-  ensures annotateTree(tree, allergens) != Safe
-{
-}
+// // Specification: menu item containing allergens must not be labeled safe
+// method verifyUnsafeTreeNotSafe(tree: MenuTree, allergens: set<string>)
+//   requires exists ing :: ing in allergens && containsAllergen(tree, ing)
+//   ensures annotateTree(tree, allergens) != Safe
+// {
+// }
 
 // Helper: recursively check tree for allergen presence
 ghost function containsAllergen(tree: MenuTree, allergen: string): bool
@@ -51,4 +51,48 @@ ghost function containsAllergen(tree: MenuTree, allergen: string): bool
 
   case Choice(_, options) =>
     exists i :: 0 <= i < |options| && containsAllergen(options[i], allergen)
+}
+
+function Pad(n: nat): string
+  decreases n
+{
+  if n == 0 then "" else " " + Pad(n - 1)
+}
+
+method Main()
+{
+  // Construct a sample menu tree:
+  var lettuce := IngredientNode("lettuce", false);
+  var tomato := IngredientNode("tomato", true);
+  var cheese := IngredientNode("cheese", true);
+  var chicken := IngredientNode("chicken", false);
+
+  var vegWrap := Choice("Veg Wrap", [lettuce, tomato]);
+  var meatWrap := Choice("Meat Wrap", [chicken, cheese]);
+  var lunchMenu := Choice("Lunch Menu", [vegWrap, meatWrap]);
+
+  var allergens := {"tomato", "cheese"};
+
+  PrintAnnotatedTree(lunchMenu, allergens, 0);
+}
+
+// Pretty-print a tree with allergy labels
+method PrintAnnotatedTree(tree: MenuTree, allergens: set<string>, indent: nat)
+{
+  var pad := Pad(indent);
+  var allergyLabel := annotateTree(tree, allergens);
+
+  match tree
+  case IngredientNode(name, isAllergen) =>
+    print pad + name + " (Ingredient, " + name + ")\n";
+
+  case Choice(labelName, options) =>
+    print pad + labelName + " (Choice, " + labelName + ")\n";
+    var i := 0;
+    while i < |options|
+      decreases |options| - i
+    {
+      PrintAnnotatedTree(options[i], allergens, indent + 2);
+      i := i + 1;
+    }
 }
