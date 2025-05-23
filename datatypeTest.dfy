@@ -49,7 +49,9 @@ method Main()
 {
   // Construct food tree
   var flour := Node("flour", []);
-  var tortila := Node("tortila", []);
+  var lactose := Node("lactose", []);
+  var milk := Node("milk", [lactose]);
+  var tortila := Node("tortila", [flour, milk]);
   var bread := Node("bread", [flour, tortila]);
 
   var chicken := Node("chicken", []);
@@ -59,7 +61,7 @@ method Main()
 
   var sandwich := Node("sandwich", [bread, chicken, salad]);
 
-  var allergens := { "tortila", "tomato" };
+  var allergens := { "tortila", "tomato", "lactose"};
 
   var labeled := LabelTree(sandwich, allergens);
 
