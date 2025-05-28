@@ -56,15 +56,16 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (labelTree :Labele
   //TODO: not working this below part
   // Use a while loop to check that all children that are labeled "safe" are not in allergens
   // var j := 0;
-  // // while j < |labeledChildren|
-  // //   invariant 0 <= j <= |labeledChildren|
-  // //   decreases |labeledChildren| - j
-  // // {
-  // // // Check if there is at least one child labeled "not safe" that is in the allergens list
-  // // if labeledChildren[j].labelName == "not safe" {
-  // //   assert exists c: LabeledTree :: c in labeledChildren && c.name in allergens;
-  // // }
+  // while j < |labeledChildren|
+  //   invariant 0 <= j <= |labeledChildren|
+  //   decreases |labeledChildren| - j
+  // {
+  // // Check if there is at least one child labeled "not safe" that is in the allergens list
+  // if labeledChildren[j].labelName == "not safe" {
+  //   assert exists c: LabeledTree :: c in labeledChildren && c.name in allergens;
+  // }
   // j := j + 1;
+  // }
 }
 function Pad(n: nat): string
   decreases n
@@ -107,6 +108,7 @@ method Main()
   var allergens := { "tortila", "tomato", "lactose"};
 
   var labeled := LabelTree(sandwich, allergens);
+  assert labeled.labelName == "not safe";
 
   PrintLabeledTree(labeled, 0);
 }
