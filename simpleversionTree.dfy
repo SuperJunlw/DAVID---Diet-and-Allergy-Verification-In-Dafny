@@ -10,10 +10,16 @@ function IsIngredientSafe(name: string, allergens: set<string>): bool
   name !in allergens
 }
 
-
+function AllIngredients(t: FoodTree): set<string>
+{
+  match t
+  case Ingredient(name) => {name}
+  case Choice(_, children) =>
+    set ing | c := children[..], i :: 0 <= i < |children|, ing in AllIngredients(children[i]) :: true
+}
 
 method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
-  ensures lt.labelname == "safe" <==> (t.AllIngredients() * allergens) == {}
+  ensures lt.labelname == "safe" <==> (t.AllIngredients(t) * allergens) == {}
 {
   match t
   //label for leaf node (node doesn't have children)
@@ -24,6 +30,7 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
       lt := LabeledNode(name, "safe", []);
     }
 
+  //label for nodes that have children
   case Choice(name, children) =>
     var labeledChildren: seq<LabeledTree> := [];
     var anyUnsafe := false;
