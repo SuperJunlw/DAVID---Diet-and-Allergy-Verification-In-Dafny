@@ -1,0 +1,10 @@
+# Block files in the form simpleversionTree.*
+/[a-zA-Z0-9_-]*.cs
+/[a-zA-Z0-9_-]*.csproj
+/[a-zA-Z0-9_-]*.deps.json
+/[a-zA-Z0-9_-]*.dll
+/[a-zA-Z0-9_-]*.pdb
+/[a-zA-Z0-9_-]*.runtimeconfig.json
+
+# Block the no-extension version
+/[a-zA-Z0-9_-]*

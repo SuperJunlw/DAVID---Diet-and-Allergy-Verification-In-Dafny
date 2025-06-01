@@ -1,15 +1,12 @@
 datatype FoodTree =
-  Ingredient(name: string) |
-  Choice(name: string, children: seq<FoodTree>)
+  FoodNode(name: string, children: seq<FoodTree>)
 
 datatype LabeledTree = 
   LabeledNode(name: string, labelname: string, children: seq<LabeledTree>)
 
 predicate AllergenFree(t: FoodTree, allergens: set<string>) {
-  match t
-  case Ingredient(name) => !(name in allergens)
-  case Choice(_, children) =>
-    forall child :: child in children ==> AllergenFree(child, allergens)
+  match t case FoodNode(name, children) =>
+    !(name in allergens) && forall child :: child in children ==> AllergenFree(child, allergens)
 }
 
 method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
@@ -17,21 +14,17 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
   ensures lt.name == t.name
   ensures lt.labelname == "safe" <==> AllergenFree(t, allergens)
 {
-  match t
-  //label for leaf node (node doesn't have children)
-  case Ingredient(name) =>
-    if name in allergens {
-      lt := LabeledNode(name, "not safe", []);
-    } else {
-      lt := LabeledNode(name, "safe", []);
-    }
+  var name := t.name;
+  var children := t.children;
 
-  //label for nodes that have children
-  case Choice(name, children) =>
-    var labeledChildren: seq<LabeledTree> := [];
-    ghost var processedChildren: seq<FoodTree> := [];
-    var anyUnsafe := false;
+  var labeledChildren: seq<LabeledTree> := [];
+  ghost var processedChildren: seq<FoodTree> := [];
+  var anyUnsafe := false;
 
+  if name in allergens {
+    anyUnsafe := true;
+    assert anyUnsafe == false <==> !(name in allergens);
+  } else {
     var i := 0;
     while i < |children|
       invariant 0 <= i <= |children|
@@ -55,9 +48,10 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
       i := i + 1;
     }
     assert anyUnsafe == false <==> (forall child :: child in children ==> AllergenFree(child, allergens));
-    var labelN := if anyUnsafe then "not safe" else "safe";
-    lt := LabeledNode(name, labelN, labeledChildren);
-    assert lt.labelname == "safe" <==> (forall child :: child in children ==> AllergenFree(child, allergens));
+  }
+  var labelN := if anyUnsafe then "not safe" else "safe";
+  lt := LabeledNode(name, labelN, labeledChildren);
+  assert lt.labelname == "safe" <==> !(name in allergens) && (forall child :: child in children ==> AllergenFree(child, allergens));
 }
 
 
@@ -82,18 +76,18 @@ method PrintLabeledTree(t: LabeledTree, indent: nat)
 
 method Main()
 {
-  var flour := Ingredient("flour");
-  var lactose := Ingredient("lactose");
-  var milk := Choice("milk", [lactose]);
-  var tortila := Choice("tortila", [flour, milk]);
-  var bread := Choice("bread", [flour, tortila]);
+  var flour := FoodNode("flour", []);
+  var lactose := FoodNode("lactose", []);
+  var milk := FoodNode("milk", [lactose]);
+  var tortila := FoodNode("tortila", [flour, milk]);
+  var bread := FoodNode("bread", [flour, tortila]);
 
-  var chicken := Ingredient("chicken");
-  var letus := Ingredient("letus");
-  var tomato := Ingredient("tomato");
-  var salad := Choice("salad", [letus, tomato]);
+  var chicken := FoodNode("chicken", []);
+  var letus := FoodNode("letus", []);
+  var tomato := FoodNode("tomato", []);
+  var salad := FoodNode("salad", [letus, tomato]);
 
-  var sandwich := Choice("sandwich", [bread, chicken, salad]);
+  var sandwich := FoodNode("sandwich", [bread, chicken, salad]);
 
   var allergens := { "tortila", "tomato", "lactose" };
 
@@ -101,5 +95,3 @@ method Main()
 
   PrintLabeledTree(labeled, 0);
 }
-
-
