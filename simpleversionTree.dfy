@@ -60,3 +60,46 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
     assert lt.labelname == "safe" <==> (forall child :: child in children ==> AllergenFree(child, allergens));
 }
 
+
+function Pad(n: nat): string
+  decreases n
+{
+  if n == 0 then "" else " " + Pad(n - 1)
+}
+
+method PrintLabeledTree(t: LabeledTree, indent: nat)
+{
+  var pad := Pad(indent);
+  print pad + t.name + " (" + t.labelname + ")\n";
+  var i := 0;
+  while i < |t.children|
+    decreases |t.children| - i
+  {
+    PrintLabeledTree(t.children[i], indent + 2);
+    i := i + 1;
+  }
+}
+
+method Main()
+{
+  var flour := Ingredient("flour");
+  var lactose := Ingredient("lactose");
+  var milk := Choice("milk", [lactose]);
+  var tortila := Choice("tortila", [flour, milk]);
+  var bread := Choice("bread", [flour, tortila]);
+
+  var chicken := Ingredient("chicken");
+  var letus := Ingredient("letus");
+  var tomato := Ingredient("tomato");
+  var salad := Choice("salad", [letus, tomato]);
+
+  var sandwich := Choice("sandwich", [bread, chicken, salad]);
+
+  var allergens := { "tortila", "tomato", "lactose" };
+
+  var labeled := LabelTree(sandwich, allergens);
+
+  PrintLabeledTree(labeled, 0);
+}
+
+
