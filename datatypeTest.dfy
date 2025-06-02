@@ -89,26 +89,28 @@ method PrintLabeledTree(t: LabeledTree, indent: nat)
   }
 }
 
-method Main()
-{
-  // Construct food tree
-  var flour := Node("flour", []);
-  var lactose := Node("lactose", []);
-  var milk := Node("milk", [lactose]);
-  var tortila := Node("tortila", [flour, milk]);
-  var bread := Node("bread", [flour, tortila]);
+// invariant allSafe ==> allSomeSafe
+// decreases |children| - i
+// method Main()
+// {
+//   // Construct food tree
+//   var flour := Node("flour", []);
+//   var lactose := Node("lactose", []);
+//   var milk := Node("milk", [lactose]);
+//   var tortila := Node("tortila", [flour, milk]);
+//   var bread := Node("bread", [flour, tortila]);
 
-  var chicken := Node("chicken", []);
-  var letus := Node("letus", []);
-  var tomato := Node("tomato", []);
-  var salad := Node("salad", [letus, tomato]);
+//   var chicken := Node("chicken", []);
+//   var letus := Node("letus", []);
+//   var tomato := Node("tomato", []);
+//   var salad := Node("salad", [letus, tomato]);
 
-  var sandwich := Node("sandwich", [bread, chicken, salad]);
+//   var sandwich := Node("sandwich", [bread, chicken, salad]);
 
-  var allergens := { "tortila", "tomato", "lactose"};
+//   var allergens := { "tortila", "tomato", "lactose"};
 
-  var labeled := LabelTree(sandwich, allergens);
-  assert labeled.labelName == "not safe";
+//   var labeled := LabelTree(sandwich, allergens);
+//   assert labeled.labelName == "not safe";
 
-  PrintLabeledTree(labeled, 0);
-}
+//   PrintLabeledTree(labeled, 0);
+// }

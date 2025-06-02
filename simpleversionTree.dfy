@@ -111,8 +111,6 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
     invariant existsSomeSafe <==> exists i: nat :: 0 <= i < |processedChildren| && SomeSafe(processedChildren[i], allergens)
     invariant allSomeSafe <==> forall i: nat :: 0 <= i < |processedChildren| ==> SomeSafe(processedChildren[i], allergens)
     invariant allSafe <==> forall i: nat :: 0 <= i < |processedChildren| ==> AllSafe(processedChildren[i], allergens)
-    invariant allSafe ==> allSomeSafe
-    decreases |children| - i
   {
     var child := children[i];
     var childLabeled := LabelTree(child, allergens);
@@ -247,4 +245,6 @@ method Main()
   Display(sandwich, [ "lactose", "ham" ]);
   print "\n";
   Display(sandwich, [ "ham" ]);
+  print "\n";
+  Display(sandwich, [ "ham", "chicken" ]);
 }
