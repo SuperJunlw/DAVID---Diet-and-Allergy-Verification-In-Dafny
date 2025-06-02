@@ -198,6 +198,20 @@ method PrintLabeledTree(t: LabeledTree, indent: nat)
   }
 }
 
+method Display(t: FoodTree, allergens: seq<string>) {
+  var i := 0;
+  var allergenSet: set<string> := {};
+  print "Allergens: ";
+  while i < |allergens| {
+    print allergens[i] + " ";
+    allergenSet := allergenSet + {allergens[i]};
+    i := i + 1;
+  }
+  print "\n===================\n";
+  var labeledTree := LabelTree(t, allergenSet);
+  PrintLabeledTree(labeledTree, 0);
+}
+
 function Ingredient(name: string): FoodTree {
   FoodNode(name, Normal, [])
 }
@@ -228,9 +242,9 @@ method Main()
 
   var sandwich := Recipe("sandwich", [bread, protein, salad]);
 
-  var allergens := { "tortila", "tomato", "lactose", "ham"};
-
-  var labeled := LabelTree(sandwich, allergens);
-
-  PrintLabeledTree(labeled, 0);
+  Display(sandwich, [ "tortila", "tomato", "lactose", "ham" ]);
+  print "\n";
+  Display(sandwich, [ "lactose", "ham" ]);
+  print "\n";
+  Display(sandwich, [ "ham" ]);
 }
