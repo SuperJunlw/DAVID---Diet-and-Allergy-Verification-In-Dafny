@@ -5,14 +5,27 @@ datatype LabeledTree =
   LabeledNode(name: string, labelname: string, children: seq<LabeledTree>)
 
 predicate AllergenFree(t: FoodTree, allergens: set<string>) {
-  match t case FoodNode(name, children) =>
-    !(name in allergens) && forall child :: child in children ==> AllergenFree(child, allergens)
+  !(t.name in allergens) && forall child :: child in t.children ==> AllergenFree(child, allergens)
+}
+
+predicate AllNodesCorrect(t: FoodTree, lt: LabeledTree, allergens: set<string>)
+{
+  // Check that for all nodes in the label tree:
+  // 1. Has a name that match the original food tree
+  lt.name == t.name &&
+  // 2. Label is correct ("safe" indicates the node is alergen free)
+  (lt.labelname == "safe" <==> AllergenFree(t, allergens)) &&
+  // 3. The children's lengths are equivalent
+  |lt.children| == |t.children| &&
+  // 4. All children are also correct
+  forall i: nat :: 0 <= i < |t.children| ==> AllNodesCorrect(t.children[i], lt.children[i], allergens)
 }
 
 method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
-  ensures lt.labelname in {"safe", "not safe"}
   ensures lt.name == t.name
-  ensures lt.labelname == "safe" <==> AllergenFree(t, allergens)
+  ensures |lt.children| == |t.children|
+  ensures lt.labelname in {"safe", "not safe"}
+  ensures AllNodesCorrect(t, lt, allergens)
 {
   var name := t.name;
   var children := t.children;
@@ -23,37 +36,32 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
 
   if name in allergens {
     anyUnsafe := true;
-    assert anyUnsafe == false <==> !(name in allergens);
-  } else {
-    var i := 0;
-    while i < |children|
-      invariant 0 <= i <= |children|
-      invariant |labeledChildren| == |processedChildren| == i   
-      invariant forall i :: 0 <= i < |processedChildren| ==> (processedChildren[i] == children[i])
-      invariant anyUnsafe == false <==> (forall child :: child in processedChildren ==> AllergenFree(child, allergens))
-      // these inviariants are not necessary for the proof but might be usefull:
-      invariant forall labeledChild :: labeledChild in labeledChildren
-                  ==> labeledChild.labelname in {"safe", "not safe"}
-      invariant forall i: nat :: 0 < i < |processedChildren|
-                  ==> labeledChildren[i].name == processedChildren[i].name
-      decreases |children| - i
-    {
-      var child := children[i];
-      var childLabeled := LabelTree(child, allergens);
-      if childLabeled.labelname == "not safe" {
-        anyUnsafe := true;
-      }
-      labeledChildren := labeledChildren + [childLabeled];
-      processedChildren := processedChildren + [child];
-      i := i + 1;
-    }
-    assert anyUnsafe == false <==> (forall child :: child in children ==> AllergenFree(child, allergens));
   }
+  var i := 0;
+  while i < |children|
+    invariant 0 <= i <= |children|
+    invariant |labeledChildren| == |processedChildren| == i
+    invariant forall i: nat :: 0 <= i < |processedChildren| ==> processedChildren[i] == children[i]
+    invariant forall i: nat :: 0 < i < |processedChildren| ==> labeledChildren[i].name == processedChildren[i].name
+    invariant forall i: nat :: 0 <= i < |processedChildren| ==> AllNodesCorrect(processedChildren[i], labeledChildren[i], allergens)    
+    invariant !anyUnsafe <==> !(name in allergens) && forall child :: child in processedChildren ==> AllergenFree(child, allergens)
+    decreases |children| - i
+  {
+    var child := children[i];
+    var childLabeled := LabelTree(child, allergens);
+    assert childLabeled.labelname == "safe" <==> AllergenFree(child, allergens);
+    if childLabeled.labelname == "not safe" {
+      anyUnsafe := true;
+    }
+    labeledChildren := labeledChildren + [childLabeled];
+    processedChildren := processedChildren + [child];
+    i := i + 1;
+  }
+  assert anyUnsafe <==> name in allergens || !(forall child :: child in processedChildren ==> AllergenFree(child, allergens));
+  assert anyUnsafe <==> !AllergenFree(t, allergens);
   var labelN := if anyUnsafe then "not safe" else "safe";
   lt := LabeledNode(name, labelN, labeledChildren);
-  assert lt.labelname == "safe" <==> !(name in allergens) && (forall child :: child in children ==> AllergenFree(child, allergens));
 }
-
 
 function Pad(n: nat): string
   decreases n
