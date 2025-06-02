@@ -31,8 +31,7 @@ predicate SomeSafe(t: FoodTree, allergens: set<string>) {
 
 predicate IsSafe(t: FoodTree, allergens: set<string>) {
   // "safe" indicates that the node is completely allergen-free
-  AllSafe(t, allergens) && SomeSafe(t, allergens)
-  // Note that AllSafe ==> SomeSafe. However, this is easier to prove as a loop inviariant.
+  AllSafe(t, allergens)
 }
 predicate IsWarning(t: FoodTree, allergens: set<string>) {
   // "warning" indicates the node has at least one allergen free option available
@@ -40,10 +39,23 @@ predicate IsWarning(t: FoodTree, allergens: set<string>) {
   SomeSafe(t, allergens) && !AllSafe(t, allergens)
 }
 predicate IsUnsafe(t: FoodTree, allergens: set<string>) {
-  // "unsafe" indicates the node is guarenteed to contain the allergen
+  // "unsafe" indicates the node is guaranteed to contain the allergen
   // (i.e. all options contain the allergen)
-  !SomeSafe(t, allergens) && !AllSafe(t, allergens)
+  !SomeSafe(t, allergens)
 }
+
+// Demonstrating some usefull properties of these predicates:
+lemma AllSafeImpliesSomeSafe(t: FoodTree, allergens: set<string>)
+requires AllSafe(t, allergens)
+ensures SomeSafe(t, allergens) {}
+
+lemma IsSafeImpliesSomeSafe(t: FoodTree, allergens: set<string>)
+requires IsSafe(t, allergens)
+ensures SomeSafe(t, allergens) {}
+
+lemma IsWarningImpliesNotAllSafe(t: FoodTree, allergens: set<string>)
+requires IsUnsafe(t, allergens)
+ensures !AllSafe(t, allergens) {}
 
 lemma OneOfIsSafeIsWarningOrIsUnsafe(t: FoodTree, allergens: set<string>) returns (n: nat)
 ensures n == 1
@@ -61,7 +73,7 @@ ensures n == 1
   }
 }
 
-predicate NodeCorrect(t: FoodTree, lt: LabeledTree, allergens: set<string>) {
+predicate AllNodesCorrect(t: FoodTree, lt: LabeledTree, allergens: set<string>) {
   // Check that for the root node in the label tree:
   // 1. Has a name that matches the original food tree
   lt.name == t.name &&
@@ -70,22 +82,12 @@ predicate NodeCorrect(t: FoodTree, lt: LabeledTree, allergens: set<string>) {
   // 3. Label is correct
   (lt.labelname == Safe <==> IsSafe(t, allergens)) && 
   (lt.labelname == Warning <==> IsWarning(t, allergens)) &&
-  (lt.labelname == Unsafe <==> IsUnsafe(t, allergens))
-}
-
-predicate AllNodesCorrect(t: FoodTree, lt: LabeledTree, allergens: set<string>)
-{
-  NodeCorrect(t, lt, allergens) &&
+  (lt.labelname == Unsafe <==> IsUnsafe(t, allergens)) &&
   // 4. All children are also correct (matching name/children lengths and correct label)
   forall i: nat :: 0 <= i < |t.children| ==> AllNodesCorrect(t.children[i], lt.children[i], allergens)
 }
 
 method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
-  ensures lt.name == t.name
-  ensures |lt.children| == |t.children|
-  ensures lt.labelname == Safe <==> IsSafe(t, allergens)
-  ensures lt.labelname == Warning <==> IsWarning(t, allergens)
-  ensures lt.labelname == Unsafe <==> IsUnsafe(t, allergens)
   ensures AllNodesCorrect(t, lt, allergens)
 {
   var name := t.name;
@@ -97,7 +99,7 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
   var isAllergen := name in allergens;
   var noChildren := |children| == 0;
 
-  // Initialize basebases
+  // Initialize basecases
   var existsSomeSafe := false;
   var allSomeSafe := true;
   var allSafe := true;
@@ -114,7 +116,7 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
   {
     var child := children[i];
     var childLabeled := LabelTree(child, allergens);
-    assert NodeCorrect(child, childLabeled, allergens);
+    assert AllNodesCorrect(child, childLabeled, allergens);
     if childLabeled.labelname == Safe {
       assert SomeSafe(child, allergens);
       assert AllSafe(child, allergens);
