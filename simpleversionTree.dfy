@@ -10,31 +10,55 @@ datatype FoodLabel =
 datatype LabeledTree = 
   LabeledNode(name: string, labelname: FoodLabel, children: seq<LabeledTree>)
 
-predicate IsSafe(t: FoodTree, allergens: set<string>) {
-  // "safe" indicates that the node is completely allergen-free
-  AllSafe(t, allergens) && SomeSafe(t, allergens)
-}
-predicate IsWarning(t: FoodTree, allergens: set<string>) {
-  // "warning" indicates the node has allergen free options available (but not all options are allergen tree)
-  SomeSafe(t, allergens) && !AllSafe(t, allergens)
-}
-predicate IsUnsafe(t: FoodTree, allergens: set<string>) {
-  // "unsafe" idicates the node is guarenteed to contain the allergen (all options contain the allergen)
-  !SomeSafe(t, allergens) && !AllSafe(t, allergens)
-}
-
 predicate AllSafe(t: FoodTree, allergens: set<string>) {
+  // true if and only if the node is completely allergen free
   !(t.name in allergens) && forall child :: child in t.children ==> AllSafe(child, allergens)
 }
 predicate SomeSafe(t: FoodTree, allergens: set<string>) {
+  // true if and only if there is at least one free option is allergy-compatible
+  // (there is a path on the tree with branches at choice nodes where none
+  //  of the ingredients are allergens)
   AllSafe(t, allergens) || (
   !(t.name in allergens) && 
   match t.nodeType
   case Normal =>
+    // If the node is not a choice node, all children must have a allergen free option
     forall child :: child in t.children ==> SomeSafe(child, allergens)
   case Choice =>
-    // Check to see if at least one option is safe
+    // If the node is a choice node, only one child must have an allergen free option
     |t.children| == 0 || exists child :: child in t.children && SomeSafe(child, allergens))
+}
+
+predicate IsSafe(t: FoodTree, allergens: set<string>) {
+  // "safe" indicates that the node is completely allergen-free
+  AllSafe(t, allergens) && SomeSafe(t, allergens)
+  // Note that AllSafe ==> SomeSafe. However, this is easier to prove as a loop inviariant.
+}
+predicate IsWarning(t: FoodTree, allergens: set<string>) {
+  // "warning" indicates the node has at least one allergen free option available
+  // (but NOT ALL options are allergen free)
+  SomeSafe(t, allergens) && !AllSafe(t, allergens)
+}
+predicate IsUnsafe(t: FoodTree, allergens: set<string>) {
+  // "unsafe" indicates the node is guarenteed to contain the allergen
+  // (i.e. all options contain the allergen)
+  !SomeSafe(t, allergens) && !AllSafe(t, allergens)
+}
+
+lemma OneOfIsSafeIsWarningOrIsUnsafe(t: FoodTree, allergens: set<string>) returns (n: nat)
+ensures n == 1
+{
+  // A node can be either safe, warning, or unsafe
+  n := 0;
+  if (IsSafe(t, allergens)) {
+    n := n + 1;
+  }
+  if (IsWarning(t, allergens)) {
+    n := n + 1;
+  }
+  if (IsUnsafe(t, allergens)) {
+    n := n + 1;
+  }
 }
 
 predicate NodeCorrect(t: FoodTree, lt: LabeledTree, allergens: set<string>) {
@@ -62,7 +86,7 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
   ensures lt.labelname == Safe <==> IsSafe(t, allergens)
   ensures lt.labelname == Warning <==> IsWarning(t, allergens)
   ensures lt.labelname == Unsafe <==> IsUnsafe(t, allergens)
-  //ensures AllNodesCorrect(t, lt, allergens)
+  ensures AllNodesCorrect(t, lt, allergens)
 {
   var name := t.name;
   var children := t.children;
@@ -77,38 +101,37 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
   var existsSomeSafe := false;
   var allSomeSafe := true;
   var allSafe := true;
-  assert allSafe == allSomeSafe;
   var i := 0;
   while i < |children|
     invariant 0 <= i <= |children|
     invariant |labeledChildren| == |processedChildren| == i
     invariant forall i: nat :: 0 <= i < |processedChildren| ==> processedChildren[i] == children[i]
     invariant forall i: nat :: 0 < i < |processedChildren| ==> labeledChildren[i].name == processedChildren[i].name
-    //invariant forall i: nat :: 0 <= i < |processedChildren| ==> AllNodesCorrect(processedChildren[i], labeledChildren[i], allergens)    
-    invariant existsSomeSafe <==> exists child :: child in processedChildren && SomeSafe(child, allergens)
-    invariant allSomeSafe <==> forall child :: child in processedChildren ==> SomeSafe(child, allergens)
-    invariant allSafe <==> forall child :: child in processedChildren ==> AllSafe(child, allergens)
+    invariant forall i: nat :: 0 <= i < |processedChildren| ==> AllNodesCorrect(processedChildren[i], labeledChildren[i], allergens)    
+    invariant existsSomeSafe <==> exists i: nat :: 0 <= i < |processedChildren| && SomeSafe(processedChildren[i], allergens)
+    invariant allSomeSafe <==> forall i: nat :: 0 <= i < |processedChildren| ==> SomeSafe(processedChildren[i], allergens)
+    invariant allSafe <==> forall i: nat :: 0 <= i < |processedChildren| ==> AllSafe(processedChildren[i], allergens)
     invariant allSafe ==> allSomeSafe
     decreases |children| - i
   {
     var child := children[i];
     var childLabeled := LabelTree(child, allergens);
     assert NodeCorrect(child, childLabeled, allergens);
-    if childLabeled.labelname == Unsafe {
-      assert !SomeSafe(child, allergens);
-      assert !AllSafe(child, allergens);
-      allSafe := false;
-      allSomeSafe := false;
+    if childLabeled.labelname == Safe {
+      assert SomeSafe(child, allergens);
+      assert AllSafe(child, allergens);
+      existsSomeSafe := true;
     } else if childLabeled.labelname == Warning {
       assert SomeSafe(child, allergens);
       assert !AllSafe(child, allergens);
       existsSomeSafe := true;
       allSafe := false;
     } else {
-      assert childLabeled.labelname == Safe;
-      assert SomeSafe(child, allergens);
-      assert AllSafe(child, allergens);
-      existsSomeSafe := true;
+      assert childLabeled.labelname == Unsafe;
+      assert !SomeSafe(child, allergens);
+      assert !AllSafe(child, allergens);
+      allSafe := false;
+      allSomeSafe := false;
     }
     labeledChildren := labeledChildren + [childLabeled];
     processedChildren := processedChildren + [child];
