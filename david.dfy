@@ -234,8 +234,8 @@ method Main()
   var flour := Ingredient("flour");
   var lactose := Ingredient("lactose");
   var milk := Recipe("milk", [lactose]);
-  var tortila := Recipe("tortila", [flour, milk]);
-  var bread := Recipe("bread", [flour, tortila]);
+  var dough := Recipe("dough", [flour, milk]);
+  var bread := Recipe("bread", [flour, dough]);
 
   var chicken := Ingredient("chicken");
   var ham := Ingredient("ham");
