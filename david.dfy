@@ -87,6 +87,11 @@ predicate AllNodesCorrect(t: FoodTree, lt: LabeledTree, allergens: set<string>) 
   forall i: nat :: 0 <= i < |t.children| ==> AllNodesCorrect(t.children[i], lt.children[i], allergens)
 }
 
+lemma AllNodesCorrectShowsFullFunctionalCorrectness(t: FoodTree, allergens: set<string>, lt1: LabeledTree, lt2: LabeledTree)
+requires AllNodesCorrect(t, lt1, allergens)
+requires AllNodesCorrect(t, lt2, allergens)
+ensures lt1 == lt2 {}
+
 method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
   ensures AllNodesCorrect(t, lt, allergens)
 {
