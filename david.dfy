@@ -99,7 +99,6 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
   var children := t.children;
 
   var labeledChildren: seq<LabeledTree> := [];
-  ghost var processedChildren: seq<FoodTree> := [];
 
   var isAllergen := name in allergens;
   var noChildren := |children| == 0;
@@ -111,13 +110,13 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
   var i := 0;
   while i < |children|
     invariant 0 <= i <= |children|
-    invariant |labeledChildren| == |processedChildren| == i
-    invariant forall i: nat :: 0 <= i < |processedChildren| ==> processedChildren[i] == children[i]
-    invariant forall i: nat :: 0 < i < |processedChildren| ==> labeledChildren[i].name == processedChildren[i].name
-    invariant forall i: nat :: 0 <= i < |processedChildren| ==> AllNodesCorrect(processedChildren[i], labeledChildren[i], allergens)    
-    invariant existsSomeSafe <==> exists i: nat :: 0 <= i < |processedChildren| && SomeSafe(processedChildren[i], allergens)
-    invariant allSomeSafe <==> forall i: nat :: 0 <= i < |processedChildren| ==> SomeSafe(processedChildren[i], allergens)
-    invariant allSafe <==> forall i: nat :: 0 <= i < |processedChildren| ==> AllSafe(processedChildren[i], allergens)
+    invariant |labeledChildren|  == i
+    invariant forall j: nat :: 0 <= j < i ==> children[j] == children[j]
+    invariant forall j: nat :: 0 < j < i ==> labeledChildren[j].name == children[j].name
+    invariant forall j: nat :: 0 <= j < i ==> AllNodesCorrect(children[j], labeledChildren[j], allergens)    
+    invariant existsSomeSafe <==> exists j: nat :: 0 <= j < i && SomeSafe(children[j], allergens)
+    invariant allSomeSafe <==> forall j: nat :: 0 <= j < i ==> SomeSafe(children[j], allergens)
+    invariant allSafe <==> forall j: nat :: 0 <= j < i ==> AllSafe(children[j], allergens)
   {
     var child := children[i];
     var childLabeled := LabelTree(child, allergens);
@@ -139,10 +138,8 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
       allSomeSafe := false;
     }
     labeledChildren := labeledChildren + [childLabeled];
-    processedChildren := processedChildren + [child];
     i := i + 1;
   }
-  assert children == processedChildren;
   assert existsSomeSafe <==> exists child :: child in children && SomeSafe(child, allergens);
   assert allSomeSafe <==> forall child :: child in children ==> SomeSafe(child, allergens);
   assert allSafe <==> forall child :: child in children ==> AllSafe(child, allergens);
