@@ -2,7 +2,7 @@ datatype NodeType =
   Normal | Choice
 
 datatype FoodTree =
-  FoodNode(name: string, nodeType: NodeType, children: seq<FoodTree>)
+  FoodNode(name: string, isIngredient: bool, nodeType: NodeType, children: seq<FoodTree>)
 
 datatype FoodLabel =
   Safe | Warning | Unsafe
@@ -10,16 +10,20 @@ datatype FoodLabel =
 datatype LabeledTree = 
   LabeledNode(name: string, labelname: FoodLabel, children: seq<LabeledTree>)
 
+predicate IsAllergen(t: FoodTree, allergens: set<string>) {
+  t.isIngredient && t.name in allergens
+}
+
 predicate AllSafe(t: FoodTree, allergens: set<string>) {
   // true if and only if the node is completely allergen free
-  !(t.name in allergens) && forall child :: child in t.children ==> AllSafe(child, allergens)
+  !IsAllergen(t, allergens) && forall child :: child in t.children ==> AllSafe(child, allergens)
 }
 predicate SomeSafe(t: FoodTree, allergens: set<string>) {
   // true if and only if there is at least one free option is allergy-compatible
   // (there is a path on the tree with branches at choice nodes where none
   //  of the ingredients are allergens)
   AllSafe(t, allergens) || (
-  !(t.name in allergens) && 
+  !IsAllergen(t, allergens) &&
   match t.nodeType
   case Normal =>
     // If the node is not a choice node, all children must have a allergen free option
@@ -97,10 +101,11 @@ method LabelTree(t: FoodTree, allergens: set<string>) returns (lt: LabeledTree)
 {
   var name := t.name;
   var children := t.children;
+  var isIngredient := t.isIngredient;
 
   var labeledChildren: seq<LabeledTree> := [];
 
-  var isAllergen := name in allergens;
+  var isAllergen := isIngredient && name in allergens;
   var noChildren := |children| == 0;
 
   // Initialize basecases
@@ -215,24 +220,34 @@ method Display(t: FoodTree, allergens: seq<string>) {
 }
 
 function Ingredient(name: string): FoodTree {
-  FoodNode(name, Normal, [])
+  FoodNode(name, true, Normal, [])
 }
 
-function Recipe(name: string, children: seq<FoodTree>): FoodTree {
-  FoodNode(name, Normal, children)
+function IngredientWithSubingredients(name: string, subingredients: seq<FoodTree>): FoodTree {
+  FoodNode(name, true, Normal, subingredients)
+}
+
+function Dish(name: string, ingredients: seq<FoodTree>): FoodTree {
+  FoodNode(name, false, Normal, ingredients)
 }
 
 function ChooseOne(name: string, children: seq<FoodTree>): FoodTree {
-  FoodNode(name + " (choose one)", Choice, children)
+  FoodNode(name + " (choose one)", false, Choice, children)
+}
+
+function Optional(option: FoodTree): FoodTree {
+  FoodNode(option.name + " (optional)", false, Choice,
+    [FoodNode("No " + option.name, false, Normal, []),
+    option])
 }
 
 method Main()
 {
   var flour := Ingredient("flour");
   var lactose := Ingredient("lactose");
-  var milk := Recipe("milk", [lactose]);
-  var dough := Recipe("dough", [flour, milk]);
-  var bread := Recipe("bread", [flour, dough]);
+  var milk := IngredientWithSubingredients("milk", [lactose]);
+  var dough := IngredientWithSubingredients("dough", [flour, milk]);
+  var bread := IngredientWithSubingredients("bread", [flour, dough]);
 
   var chicken := Ingredient("chicken");
   var ham := Ingredient("ham");
@@ -240,9 +255,12 @@ method Main()
 
   var letus := Ingredient("letus");
   var tomato := Ingredient("tomato");
-  var salad := Recipe("salad", [letus, tomato]);
+  var salad := IngredientWithSubingredients("salad", [letus, tomato]);
 
-  var sandwich := Recipe("sandwich", [bread, protein, salad]);
+  var ketchup := IngredientWithSubingredients("ketchup", [tomato]);
+  var optionalKetchup := Optional(ketchup);
+
+  var sandwich := Dish("sandwich", [bread, protein, salad, optionalKetchup]);
 
   Display(sandwich, [ "tortila", "tomato", "lactose", "ham" ]);
   print "\n";
