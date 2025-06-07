@@ -1,0 +1,4 @@
+tortila,tomato,lactose,ham
+lactose,ham
+ham
+ham,chicken

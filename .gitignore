@@ -6,5 +6,11 @@
 /[a-zA-Z0-9_-]*.pdb
 /[a-zA-Z0-9_-]*.runtimeconfig.json
 
-# Block the no-extension version
+# Ignore top-level files with no extension
 /[a-zA-Z0-9_-]*
+
+# Allow directories again
+!/*/
+
+
+
