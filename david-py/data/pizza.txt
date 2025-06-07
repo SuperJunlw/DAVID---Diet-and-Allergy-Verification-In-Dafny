@@ -1,0 +1,20 @@
+pizza
+  crust
+    flour
+    yeast
+    salt
+    water
+  sauce (choose one)
+    tomato sauce
+      tomato
+      basil
+    white sauce
+      milk
+      garlic
+  cheese (optional)
+    mozzarella
+      milk
+  toppings (choose one)
+    pepperoni
+    mushrooms
+    olives

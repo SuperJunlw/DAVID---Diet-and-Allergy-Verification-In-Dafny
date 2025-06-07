@@ -1,0 +1,26 @@
+burger
+  bun
+    flour
+    yeast
+    sugar
+  patty (choose one)
+    beef patty
+      beef
+    chicken patty
+      chicken
+    veggie patty
+      beans
+      carrots
+  cheese (optional)
+    cheddar
+      milk
+  toppings
+    lettuce
+    tomato
+    onion
+  condiments (optional)
+    ketchup
+      tomato
+    mayo
+      egg
+      oil

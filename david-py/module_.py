@@ -418,8 +418,15 @@ def build_food_tree(node: RawNode, default__) -> Any:
 import os
 
 def updated_main_from_file(default__):
+    tree_file = "pizza.txt"
+    allergen_file = "allergen_pizza.txt"
     # filepath = "data/food_tree.txt"
-    filepath = os.path.join(os.path.dirname(__file__), "data", "food_tree.txt")
+    if len(sys.argv) < 3:
+        _dafny.print("No arguments defined. Using pizza tree and allergen file\n")
+    else:
+        tree_file = sys.argv[1]
+        allergen_file = sys.argv[2]
+    filepath = os.path.join(os.path.dirname(__file__), "data", tree_file)
     with open(filepath, "r") as f:
         lines = f.readlines()
 
@@ -433,7 +440,7 @@ def updated_main_from_file(default__):
     #     ["ham", "chicken"],
     # ]
 
-    allergen_path = os.path.join(os.path.dirname(__file__), "data", "allergen.txt")
+    allergen_path = os.path.join(os.path.dirname(__file__), "data", allergen_file)
 
     # Read allergen sets from file
     allergen_sets = []
