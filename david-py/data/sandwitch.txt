@@ -1,0 +1,21 @@
+Sandwich
+  bread
+    flour
+    dough
+      flour
+      milk
+        lactose
+  Protein Topping (choose one)
+    chicken
+    ham
+  Vegetable Toppings
+    lettuce
+    tomato
+    onion
+  Sauce (optional)
+    mayo
+      egg
+      oil
+    Buffalo
+      butter
+      pepper
