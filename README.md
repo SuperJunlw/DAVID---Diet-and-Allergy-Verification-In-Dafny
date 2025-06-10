@@ -11,7 +11,7 @@ dafny run david.dfy
 ## Running in python
 
 1. Expects two command line arguments, first file containing menu tree and second file containing allergen list
-2. Both file need to be in data directory relative to \__main\__.py
+2. Both file need to be in data directory relative to \_\_main\_\_.py
 3. After going to the directory of david-py run the following command
 
 ```
